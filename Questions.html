@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="he">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>המירוץ למיליון של דן</title>
+<style>
+body {
+    font-family: Arial, sans-serif;
+    direction: rtl;
+    text-align: center;
+    margin: 0;
+    padding: 20px;
+    background: linear-gradient(135deg, #1e3c72, #2a5298);
+    color: white;
+}
+h1 { text-shadow: 2px 2px 4px #000; }
+.container { max-width: 900px; margin: auto; }
+
+#track {
+    display: flex;
+    justify-content: space-between;
+    margin: 20px 0;
+}
+.track-step {
+    width: 9%;
+    padding: 10px;
+    background: rgba(255,255,255,0.2);
+    border-radius: 10px;
+    transition: background 0.3s;
+    font-size: 12px;
+}
+.track-step.active { background: #ffd700; color: black; font-weight: bold; }
+
+button {
+    padding: 12px 20px;
+    margin: 8px 0;
+    border: none;
+    border-radius: 10px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+.option { background: #4caf50; color: white; }
+.option:hover { transform: scale(1.05); box-shadow: 0 0 15px rgba(255,255,255,0.8); }
+
+#story {
+    background: rgba(255,255,255,0.15);
+    padding: 20px;
+    border-radius: 12px;
+    margin-bottom: 15px;
+    font-style: italic;
+    border: 2px solid white;
+}
+#score { margin-top: 15px; font-size: 18px; }
+#restartBtn { background: white; color: black; font-weight: bold; margin-top: 15px; }
+#restartBtn:hover { background: #ddd; }
+</style>
+</head>
+<body>
+
+<div class="container">
+<h1>🌍 המירוץ למיליון של דן</h1>
+
+<div id="track">
+    <div class="track-step" id="step0">גרמניה</div>
+    <div class="track-step" id="step1">הודו</div>
+    <div class="track-step" id="step2">ניגריה</div>
+    <div class="track-step" id="step3">ארה"ב</div>
+    <div class="track-step" id="step4">ברזיל</div>
+    <div class="track-step" id="step5">סין</div>
+    <div class="track-step" id="step6">דרום אפריקה</div>
+    <div class="track-step" id="step7">קנדה</div>
+    <div class="track-step" id="step8">מצרים</div>
+    <div class="track-step" id="step9">יפן</div>
+</div>
+
+<div id="story"></div>
+<h2 id="question"></h2>
+<div id="options"></div>
+<div id="score"></div>
+</div>
+
+<script>
+// שאלות ברורות עם תשובה אחת ברורה
+const questions = [
+    { story:"גרמניה – כלכלה חזקה.", question:"איזו תעשייה מרכזית בגרמניה?", options:["רכב","חקלאות","תיירות","טקסטיל"], answer:0 },
+    { story:"הודו – צמיחה מהירה בהייטק.", question:"באיזה תחום הודו מובילה בעולם?", options:["פיתוח תוכנה","חקלאות","נפט","רפואה"], answer:0 },
+    { story:"ניגריה – משאבי נפט.", question:"מהו המשאב העיקרי של ניגריה?", options:["נפט","פחם","זהב","דגים"], answer:0 },
+    { story:"ארה\"ב – חדשנות ותשתיות.", question:"מה מייחד את כלכלת ארה\"ב?", options:["חדשנות טכנולוגית","חקלאות בלבד","נפט קטן","אי שוויון קיצוני"], answer:0 },
+    { story:"ברזיל – משאבים טבעיים.", question:"איזו בעיה מרכזית קיימת בברזיל?", options:["פערי הכנסה גדולים","תוחלת חיים גבוהה","טכנולוגיה מתקדמת","תשתיות מושלמות"], answer:0 },
+    { story:"סין – ייצור תעשייתי גדול.", question:"איזו פעילות כלכלית מרכזית בסין?", options:["ייצור ומסחר","חקלאות בלבד","טקסטיל קטן","נפט בלבד"], answer:0 },
+    { story:"דרום אפריקה – משאבים ואתגרים חברתיים.", question:"איזה משאב טבעי חשוב בדרום אפריקה?", options:["זהב","גז טבעי","תפוחי אדמה","טקסטיל"], answer:0 },
+    { story:"קנדה – משאבים ותשתיות.", question:"מה תורם למעמדה הכלכלי של קנדה?", options:["משאבי טבע ותשתיות","חקלאות בלבד","ייצור נפט קטן","חוסר חינוך"], answer:0 },
+    { story:"מצרים – היסטוריה ארוכה.", question:"איזו פעילות כלכלית בולטת במצרים?", options:["חקלאות לאורך הנילוס","תעשייה מתקדמת","טכנולוגיה בלבד","דיגיטל"], answer:0 },
+    { story:"יפן – חדשנות וטכנולוגיה.", question:"מה מייחד את יפן?", options:["טכנולוגיה וחדשנות","חקלאות בלבד","נפט גדול","אי שוויון קיצוני"], answer:0 }
+];
+
+let currentQuestion = 0;
+let score = 0;
+
+const storyEl = document.getElementById("story");
+const questionEl = document.getElementById("question");
+const optionsEl = document.getElementById("options");
+const scoreEl = document.getElementById("score");
+
+function shuffleOptions(q){
+    const arr = q.options.map((opt, idx)=>({opt, idx}));
+    for(let i=arr.length-1;i>0;i--){
+        const j=Math.floor(Math.random()*(i+1));
+        [arr[i],arr[j]]=[arr[j],arr[i]];
+    }
+    const newOptions = arr.map(o=>o.opt);
+    const newAnswer = arr.findIndex(o=>o.idx===q.answer);
+    return {newOptions, newAnswer};
+}
+
+function updateTrack(){
+    for(let i=0;i<questions.length;i++){
+        const step = document.getElementById("step"+i);
+        if(i===currentQuestion) step.classList.add("active");
+        else step.classList.remove("active");
+    }
+}
+
+function loadQuestion(){
+    const q = questions[currentQuestion];
+    storyEl.textContent = q.story;
+    questionEl.textContent = q.question;
+    optionsEl.innerHTML="";
+    updateTrack();
+
+    const {newOptions,newAnswer} = shuffleOptions(q);
+    q.shuffledAnswer = newAnswer;
+
+    newOptions.forEach((opt,index)=>{
+        const btn = document.createElement("button");
+        btn.textContent = opt;
+        btn.className = "option";
+        btn.onclick = ()=>checkAnswer(index);
+        optionsEl.appendChild(btn);
+    });
+    scoreEl.textContent = "ניקוד: "+score+" / "+questions.length;
+}
+
+function checkAnswer(selected){
+    const q = questions[currentQuestion];
+    if(selected===q.shuffledAnswer){
+        score++;
+        currentQuestion++;
+        if(currentQuestion<questions.length) loadQuestion();
+        else finishGame();
+    } else { alert("❌ טעות! נסה שוב"); }
+}
+
+function finishGame(){
+    storyEl.textContent="";
+    questionEl.textContent="🏁 סיימתם את המרוץ!";
+    optionsEl.innerHTML="";
+    scoreEl.textContent=`🎯 ניקוד סופי: ${score} מתוך ${questions.length}`;
+
+    const msg = document.createElement("p");
+    msg.textContent = (score===questions.length)?"🏆 מושלם! הגעת לקו הסיום ראשון!":"💪 אפשר להשתפר ולהבין את העולם טוב יותר.";
+    optionsEl.appendChild(msg);
+
+    const restartBtn = document.createElement("button");
+    restartBtn.textContent="🔄 התחלה מחדש";
+    restartBtn.id="restartBtn";
+    restartBtn.onclick=restartGame;
+    optionsEl.appendChild(restartBtn);
+}
+
+function restartGame(){
+    currentQuestion=0;
+    score=0;
+    loadQuestion();
+}
+
+loadQuestion();
+</script>
+
+</body>
+</html>
